@@ -1,5 +1,6 @@
 package com.study.week3.gateway.inbound;
 
+import com.study.week3.gateway.filter.HttpHeaderFilter;
 import com.study.week3.gateway.outbound.httpclient4.HttpOutboundHandler;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -25,6 +26,8 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
     private final String proxyServer;
     private HttpOutboundHandler handler;
 
+    private static final HttpHeaderFilter HTTP_HEADER_FILTER = new HttpHeaderFilter();
+
     public HttpInboundHandler(String proxyServer) {
         this.proxyServer = proxyServer;
         handler = new HttpOutboundHandler(this.proxyServer);
@@ -40,6 +43,7 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
         try {
             //logger.info("channelRead流量接口请求开始，时间为{}", startTime);
             FullHttpRequest fullRequest = (FullHttpRequest) msg;
+            HTTP_HEADER_FILTER.filter(fullRequest,ctx);
             String uri = fullRequest.uri();
             //logger.info("接收到的请求url为{}", uri);
             if (!uri.contains("/test")) {
@@ -58,7 +62,7 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
     private void handlerTest(FullHttpRequest fullRequest, ChannelHandlerContext ctx) {
         FullHttpResponse response = null;
         try {
-            String value = "hello,this is not a common request,please check your url";
+            String value = "hello,this is not a test request,please check your url";
             response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(value.getBytes("UTF-8")));
             response.headers().set("Content-Type", "application/json");
             response.headers().setInt("Content-Length", response.content().readableBytes());
@@ -77,11 +81,5 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
             }
         }
     }
-//
-//    @Override
-//    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-//        cause.printStackTrace();
-//        ctx.close();
-//    }
 
 }
